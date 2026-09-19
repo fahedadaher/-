@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>حساب الأمبيرات</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f3f6f4; --surface:#ffffff; --ink:#0f3d8a; --muted:#3d6bb3; --line:#dbe4e0;
+  --brand:#0f5a52; --brand-ink:#ffffff; --sun:#f5b301; --sun-ink:#2b2100;
+  --in:#1565c0; --in-bg:#e3effb; --out:#b3402b; --out-bg:#f9e6e1; --charge:#8a6400; --charge-bg:#fbf1cc;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f1917; --surface:#182420; --ink:#9ec3ff; --muted:#7fa6e6; --line:#2a3a35;
+  --brand:#146c62; --sun:#f5b301; --in:#64b5f6; --in-bg:#12263d; --out:#f08a72; --out-bg:#3a1f19; --charge:#f0c94a; --charge-bg:#3a3010;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f1917; --surface:#182420; --ink:#9ec3ff; --muted:#7fa6e6; --line:#2a3a35;
+  --brand:#146c62; --sun:#f5b301; --in:#64b5f6; --in-bg:#12263d; --out:#f08a72; --out-bg:#3a1f19; --charge:#f0c94a; --charge-bg:#3a3010;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans Arabic",Tahoma,Arial,sans-serif;font-size:17.5px;font-weight:600;line-height:1.55;padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+header{background:var(--brand);color:var(--brand-ink);padding:18px 18px 14px}
+header h1{margin:0;font-size:23px;font-weight:700}
+header p{margin:4px 0 0;font-size:14.5px;opacity:.85}
+main{max-width:720px;margin:0 auto;padding:14px}
+.view{display:none}.view.active{display:block}
+h2{font-size:19px;margin:18px 0 10px;font-weight:700}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.stat small{display:block;color:var(--muted);font-size:14.5px}
+.stat b{display:block;font-size:25px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.stat.net{grid-column:1/-1;background:var(--sun);color:var(--sun-ink);border-color:transparent}
+.stat.net small{color:inherit;opacity:.8}
+.c-in{color:var(--in)}.c-out{color:var(--out)}.c-charge{color:var(--charge)}
+.row{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.row .grow{flex:1;min-width:0}
+.row .t{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .s{font-size:14.5px;color:var(--muted)}
+.row .amt{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tag{font-size:13.5px;padding:2px 8px;border-radius:999px;font-weight:600}
+.tag.in{background:var(--in-bg);color:var(--in)}.tag.out{background:var(--out-bg);color:var(--out)}.tag.charge{background:var(--charge-bg);color:var(--charge)}.tag.hand{background:var(--brand);color:#fff}.c-hand{color:var(--brand)}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+button{font:inherit;cursor:pointer;border:0;border-radius:10px;padding:10px 14px;background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+button.primary{background:var(--brand);color:#fff;border-color:transparent}
+button.sun{background:var(--sun);color:var(--sun-ink);border-color:transparent}
+button.danger{color:var(--out)}
+button.sm{padding:7px 11px;font-size:14.5px}
+button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.empty{text-align:center;color:var(--muted);padding:26px 10px;border:1px dashed var(--line);border-radius:12px}
+nav{position:fixed;bottom:0;right:0;left:0;background:var(--surface);border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;border:0;border-radius:0;background:none;padding:8px 4px 10px;font-size:14px;line-height:1.3;color:var(--muted);white-space:nowrap}
+nav button.on{color:var(--brand);font-weight:600}
+nav button span{display:block;font-size:22px;line-height:1.2}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:10}
+.overlay.open{display:flex}
+.sheet{background:var(--surface);width:100%;max-width:560px;border-radius:18px 18px 0 0;padding:18px 16px 24px;max-height:92vh;overflow:auto}
+.sheet h3{margin:0 0 12px;font-size:19px}
+label{display:block;font-size:14.5px;color:var(--muted);margin:10px 0 4px}
+input,select,textarea{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+input:focus,select:focus{outline:2px solid var(--brand)}
+.seg{display:flex;gap:6px}
+.seg button{flex:1}
+.seg button.on{background:var(--brand);color:#fff;border-color:transparent}
+.hint{font-size:14.5px;color:var(--muted);margin-top:8px}
+.filter{display:flex;gap:8px;margin:8px 0}
+.filter select,.filter input{flex:1}
+.toast{position:fixed;bottom:92px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:15.5px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
+.toast.show{opacity:1}
+.debt{color:var(--out)}.credit{color:var(--in)}
+.status{font-size:13.5px;color:var(--muted);text-align:center;margin:6px 0 0}
+table.subs{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-variant-numeric:tabular-nums}
+table.subs th,table.subs td{padding:9px 6px;text-align:right;border-bottom:1px solid var(--line);font-size:14.5px}
+table.subs td.act{padding:4px}
+table.subs td.act{white-space:nowrap}
+table.subs td.act button{display:inline-block;margin:0 2px;padding:7px 9px;font-size:13.5px;white-space:nowrap}
+table.subs th{background:var(--brand);color:#fff;font-weight:600;white-space:nowrap}
+table.subs td.n{text-align:center}
+table.subs tr:last-child td{border-bottom:0}
+table.subs tbody tr{cursor:pointer}
+table.subs tfoot td{font-weight:700;background:var(--bg)}
+.tblwrap{overflow-x:auto}
+input,select,textarea,button{font-weight:600}
+table.subs td.nm{font-weight:800;font-size:16px}
+.row .t{font-weight:800}
+#acctTitle{font-weight:800}
+/* week card */
+.wcard{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 14px 10px;margin:14px 0;box-shadow:0 2px 10px rgba(0,0,0,.04)}
+.wcard .wt{font-size:19px;font-weight:800;margin:0 0 8px;color:var(--brand)}
+.wchips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.wchip{flex:1;min-width:90px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:8px 10px;text-align:center}
+.wchip small{display:block;font-size:13px;color:var(--muted)}
+.wchip b{display:block;font-size:18px;font-weight:800}
+.wbar{height:8px;background:var(--line);border-radius:999px;overflow:hidden;margin:2px 0 12px}
+.wbar i{display:block;height:100%;background:var(--in);border-radius:999px}
+.wcard table.subs{border-radius:12px}
+table.subs th:not(:first-child){text-align:center}
+table.subs td.n{text-align:center}
+/* home hero */
+.hero{grid-column:1/-1;background:linear-gradient(135deg,var(--brand),#137a6e);color:#fff;border-radius:18px;padding:16px 18px;box-shadow:0 6px 18px rgba(15,90,82,.25)}
+.hero small{display:block;font-size:14px;opacity:.85}
+.hero .hero-t{font-size:18px;font-weight:800;margin-bottom:6px}
+.hero-tag{font-size:12px;background:rgba(255,255,255,.2);padding:2px 8px;border-radius:999px;margin-right:6px}
+.hero .hero-v{font-size:34px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.2;margin:2px 0 8px}
+.hbar{height:9px;background:rgba(255,255,255,.25);border-radius:999px;overflow:hidden;margin-bottom:12px}
+.hbar i{display:block;height:100%;background:#8fd0ff;border-radius:999px}
+.hero-row{display:flex;gap:8px}
+.hero-row>div{flex:1;background:rgba(255,255,255,.12);border-radius:12px;padding:8px 6px;text-align:center}
+.hero-row b{display:block;font-size:17px;font-weight:800;font-variant-numeric:tabular-nums}
+.hero-row .box-ok{background:#1e88e5;color:#fff}.hero-row .box-ok small{opacity:.9}.hero-row .box-bad{background:#f39c2a;color:#fff}.hero-row .box-bad small{opacity:.95}
+.stat.ico{position:relative;padding-right:52px}
+.stat.ico .ic{position:absolute;right:12px;top:14px;font-size:24px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:var(--bg);border-radius:10px}
+/* owner page */
+.lockcard{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px 18px;margin-top:24px;box-shadow:0 6px 18px rgba(0,0,0,.06)}
+.lockico{width:64px;height:64px;margin:0 auto;border-radius:50%;background:var(--sun);display:flex;align-items:center;justify-content:center;font-size:30px}
+input.pin{text-align:center;letter-spacing:6px;font-size:22px;padding:12px}
+.ownerhead{display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,var(--brand),#137a6e);color:#fff;border-radius:18px;padding:16px 18px;margin-bottom:12px}
+.ownerhead .oh-t{font-size:20px;font-weight:800}.ownerhead small{opacity:.85;font-size:13px}
+.ownerhead button{background:rgba(255,255,255,.18);color:#fff;border-color:transparent}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.tile{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:right;padding:14px;border-radius:16px;background:var(--surface);border:1px solid var(--line);box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.tile:active{transform:scale(.98)}
+.tile .tico{font-size:28px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:var(--bg);border-radius:12px;margin-bottom:6px}
+.tile b{font-size:17px;font-weight:800}.tile small{font-size:12.5px;color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;margin:12px 0}
+.danger-card{border-color:var(--out);background:var(--out-bg)}
+.abtn{display:inline-block;padding:10px 14px;border-radius:10px;background:var(--surface);border:1px solid var(--line);color:var(--ink);text-decoration:none;font-weight:700}
+.abtn.wa{background:#25d366;color:#fff;border-color:transparent}
+.pill{display:inline-block;text-decoration:none;padding:7px 11px;border-radius:10px;font-weight:700;font-size:14.5px;white-space:nowrap}
+.pill.red{background:#c62828;color:#fff}
+.pill.blue{background:var(--in);color:#fff}
+.filter button.mic{flex:0 0 auto;width:48px;padding:0;font-size:22px;border-radius:10px}
+.filter button.mic.on{background:#c62828;color:#fff;border-color:transparent;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+</style>
+</head>
+<body>
+<header>
+  <h1>☀️ حساب الأمبيرات</h1>
+  <p>بيع أمبيرات للمشتركين وتسجيل المصاريف</p>
+</header>
+
+<main>
+<!-- الرئيسية -->
+<section id="v-home" class="view active">
+  <div class="stats" id="stats"></div>
+  <div id="lateBox"></div>
+</section>
+
+<!-- المشتركين -->
+<section id="v-subs" class="view">
+  <div class="btns"><button onclick="go('owner');renderOwner()">→ رجوع لصاحب الشركة</button></div>
+  <div class="btns"><button class="primary" onclick="openSub()">＋ مشترك جديد</button><button class="sun" onclick="openMonthly()">تسجيل الاشتراك الأسبوعي</button></div>
+  <div class="filter"><input id="subSearch" placeholder="بحث بالاسم أو الهاتف" oninput="render()"><button class="mic" id="micSubs" onclick="voiceSearch('subSearch')" aria-label="بحث صوتي">🎤</button></div>
+  <div id="subList"></div>
+  <div id="subAmpsTotal" class="stats" style="margin-top:12px"></div>
+</section>
+
+<!-- الأسابيع -->
+<section id="v-weeks" class="view">
+  <div class="btns"><button class="sun" onclick="openMonthly()">＋ إضافة أسبوع جديد</button><button id="showPaidBtn" onclick="showPaid=!showPaid;render()">عرض المسدَّد</button></div>
+  <div class="filter"><input id="weekSearch" placeholder="بحث باسم المشترك" oninput="render()"><button class="mic" id="micWeeks" onclick="voiceSearch('weekSearch')" aria-label="بحث صوتي">🎤</button></div>
+  <div id="weeksList"></div>
+</section>
+
+<!-- الحركات -->
+<section id="v-tx" class="view">
+  <div class="btns"><button class="primary" onclick="openTx('in')">＋ قبض من مشترك</button><button onclick="openTx('out')">－ دفع مصروف</button><button class="sun" onclick="openHand()">تسليم لصاحب العمل</button></div>
+  <div class="filter">
+    <select id="txType" onchange="render()">
+      <option value="">كل الحركات</option>
+      <option value="in">قبض</option>
+      <option value="out">دفع</option>
+      <option value="charge">اشتراك أسبوعي</option>
+      <option value="hand">تسليم لصاحب العمل</option>
+    </select>
+    <input type="month" id="txMonth" onchange="render()">
+  </div>
+  <div id="txSummary" class="stats" style="margin-bottom:10px"></div>
+  <div id="txList"></div>
+</section>
+
+<!-- صاحب الشركة -->
+<section id="v-owner" class="view">
+  <div id="ownerLock" class="lockcard">
+    <div class="lockico">🔒</div>
+    <h2 id="ownerLockTitle" style="margin:6px 0 2px;text-align:center">صفحة صاحب الشركة</h2>
+    <p class="hint" style="text-align:center;margin:0 0 10px">هذه الصفحة محمية بكلمة سر</p>
+    <label id="ownerLockLbl">كلمة السر</label><input type="password" id="ownerPass" inputmode="numeric" placeholder="••••" class="pin" onkeydown="if(event.key==='Enter')ownerUnlock()">
+    <div id="ownerPass2Wrap" style="display:none"><label>تأكيد كلمة السر</label><input type="password" id="ownerPass2" inputmode="numeric" placeholder="••••" class="pin"></div>
+    <div class="btns" style="margin-top:14px"><button class="primary" style="flex:1;padding:13px" onclick="ownerUnlock()" id="ownerUnlockBtn">فتح</button></div>
+  </div>
+  <div id="ownerArea" style="display:none">
+    <div class="ownerhead"><div><div class="oh-t">👔 صاحب الشركة</div><small>لوحة الإدارة</small></div><button class="sm" onclick="ownerLockNow()">🔒 قفل</button></div>
+    <div class="tiles">
+      <button class="tile" onclick="go('subs')"><span class="tico">👥</span><b>المشتركين</b><small>إضافة وتعديل وحذف</small></button>
+      <button class="tile" onclick="go('rep');renderReports()"><span class="tico">📊</span><b>التقارير</b><small>المقبوض حسب الأسبوع</small></button>
+      <button class="tile" onclick="go('set')"><span class="tico">⚙️</span><b>الإعدادات</b><small>السعر والأسبوع الأول</small></button>
+      <button class="tile" onclick="document.getElementById('passCard').scrollIntoView({behavior:'smooth'})"><span class="tico">🔑</span><b>كلمة السر</b><small>تغيير كلمة السر</small></button>
+    </div>
+    <div class="stats" id="ownerStats"></div>
+    <div class="card" id="passCard">
+      <h2 style="margin-top:0">🔑 تغيير كلمة السر</h2>
+      <label>كلمة السر الجديدة</label><input type="password" id="ownerNewPass" inputmode="numeric" class="pin">
+      <div class="btns"><button class="primary" onclick="ownerChangePass()">حفظ كلمة السر</button></div>
+    </div>
+    <div class="card danger-card">
+      <h2 style="margin-top:0;color:var(--out)">⚠️ إعادة تعيين</h2>
+      <p class="hint" style="margin-top:0">الأول يمسح الأسابيع والمقبوضات فقط ويُبقي المشتركين والإعدادات. الثاني يمسحها ويعيد الإعدادات إلى الوضع الابتدائي، مع إبقاء المشتركين وكلمة السر.</p>
+      <div class="btns"><button class="danger" onclick="resetWeeks()">إعادة تعيين الأسابيع والمقبوضات</button><button class="danger" onclick="resetAll()">إعادة تعيين كامل (ما عدا المشتركين)</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- التقارير -->
+<section id="v-rep" class="view">
+  <div class="btns"><button onclick="go('owner');renderOwner()">→ رجوع لصاحب الشركة</button></div>
+  <h2>التقارير</h2>
+  <div class="stats" id="repStats"></div>
+  <h2>المقبوض حسب الأسبوع</h2>
+  <div id="repWeeks"></div>
+</section>
+
+<!-- الإعدادات -->
+<section id="v-set" class="view">
+  <div class="btns"><button onclick="go('owner');renderOwner()">→ رجوع لصاحب الشركة</button></div>
+  <h2>الإعدادات</h2>
+  <label>سعر الأمبير الأسبوعي (الافتراضي)</label>
+  <input type="number" id="setPrice" inputmode="decimal">
+    <label>الأسبوع الأول — من</label>
+  <input type="date" id="setFirst" onchange="document.getElementById('setFirstTo').value=this.value?(()=>{const d=new Date(this.value+'T00:00:00');d.setDate(d.getDate()+6);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})():''">
+  <label>الأسبوع الأول — إلى (يُحسب تلقائيًا)</label>
+  <input type="date" id="setFirstTo" disabled>
+  <label>مفتاح الدولة للهواتف (للإشعارات عبر واتساب، مثال: 964)</label>
+  <input id="setCC" inputmode="numeric" placeholder="مثال: 964">
+  <label>المطالبة عبر واتساب بعد كم يوم من بداية الأسبوع؟</label>
+  <input type="number" id="setRemind" inputmode="numeric" placeholder="3" min="0">
+  <label>نص رسالة المطالبة (اختياري — اتركه فارغًا للنص الافتراضي)</label>
+  <textarea id="setRemindTxt" rows="3" placeholder="يمكنك استخدام: {الاسم} {الأسبوع} {المبلغ}"></textarea>
+  <label>العملة</label>
+  <input id="setCur" placeholder="مثال: ريال، دينار، $">
+  <label>اسم المنظومة</label>
+  <input id="setName" placeholder="مثال: منظومة الحي الشرقي">
+  <div class="btns"><button class="primary" onclick="saveSettings()">حفظ الإعدادات</button></div>
+  <h2>☁️ المزامنة بين الأجهزة</h2>
+  <p class="hint" id="sbHint">اربط التطبيق بقاعدة بياناتك لتظهر نفس البيانات على كل الأجهزة.</p>
+  <label>رابط المشروع (Project URL)</label>
+  <input id="sbUrl" placeholder="https://xxxx.supabase.co">
+  <label>المفتاح العام (anon / publishable key)</label>
+  <input id="sbKey" placeholder="sb_publishable_... أو eyJ...">
+  <div class="btns"><button class="primary" onclick="sbSave()">حفظ وتشغيل المزامنة</button><button onclick="sbUploadAll()">رفع بيانات هذا الجهاز</button><button class="danger" onclick="sbOff()">إيقاف المزامنة</button></div>
+  <p class="status" id="sbStatus"></p>
+  <h2>نسخة احتياطية</h2>
+  <div class="btns"><button onclick="exportData()">نسخ البيانات (JSON)</button><button onclick="importData()">استيراد بيانات</button></div>
+  <textarea id="ioBox" rows="4" placeholder="الصق نسخة JSON هنا للاستيراد"></textarea>
+  <h2>خطر</h2>
+  <div class="btns"><button class="danger" onclick="wipe()">مسح كل البيانات</button></div>
+  <p class="status" id="storeStatus"></p>
+</section>
+</main>
+
+<nav>
+  <button class="on" data-v="home" onclick="go('home')"><span>🏠</span>الرئيسية</button>
+  <button data-v="weeks" onclick="go('weeks')"><span>📅</span>الأسابيع</button>
+  <button data-v="owner" onclick="go('owner');renderOwner()"><span>🔒</span>صاحب الشركة</button>
+</nav>
+
+<!-- نموذج حركة -->
+<div class="overlay" id="txSheet" onclick="if(event.target===this)closeSheets()">
+  <div class="sheet">
+    <h3 id="txTitle">حركة</h3>
+    <div class="seg"><button id="segIn" onclick="setTxType('in')">قبض</button><button id="segOut" onclick="setTxType('out')">دفع</button></div>
+    <div id="txSubWrap"><label>المشترك</label><select id="txSub"></select></div>
+    <div id="txCatWrap"><label>نوع المصروف</label>
+      <select id="txCat"><option>صيانة</option><option>وقود / ديزل</option><option>بطاريات</option><option>ألواح ومعدات</option><option>أجور</option><option>أخرى</option></select></div>
+    <label>المبلغ</label><input type="number" id="txAmt" inputmode="decimal" placeholder="0">
+    <label>التاريخ</label><input type="date" id="txDate">
+    <label>ملاحظة</label><input id="txNote" placeholder="اختياري">
+    <div class="btns"><button class="primary" onclick="saveTx()">حفظ</button><button onclick="closeSheets()">إلغاء</button></div>
+  </div>
+</div>
+
+<!-- تسليم لصاحب العمل -->
+<div class="overlay" id="handSheet" onclick="if(event.target===this)closeSheets()">
+  <div class="sheet">
+    <h3>استلام مبلغ من العامل</h3>
+    <p class="hint" id="handHint"></p>
+    <label>المبلغ المُسلَّم</label><input type="number" id="handAmt" inputmode="decimal">
+    <label>التاريخ</label><input type="date" id="handDate">
+    <label>ملاحظة</label><input id="handNote" placeholder="اختياري">
+    <div class="btns"><button class="primary" onclick="saveHand()">تأكيد الاستلام</button><button onclick="closeSheets()">إلغاء</button></div>
+  </div>
+</div>
+
+<!-- إشعار المشترك -->
+<div class="overlay" id="notifySheet" onclick="if(event.target===this)closeSheets()">
+  <div class="sheet">
+    <h3>📲 إعلام المشترك <span id="notifyWho"></span></h3>
+    <pre id="notifyPreview" style="white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px;font:inherit;font-size:15px;margin:0 0 10px"></pre>
+    <div class="btns"><a id="notifyWa" target="_blank" rel="noopener" class="abtn wa">واتساب</a><a id="notifySms" class="abtn">رسالة SMS</a><button onclick="closeSheets()">لاحقًا</button></div>
+  </div>
+</div>
+
+<!-- نموذج مشترك -->
+<div class="overlay" id="subSheet" onclick="if(event.target===this)closeSheets()">
+  <div class="sheet">
+    <h3 id="subTitle">مشترك جديد</h3>
+    <input type="hidden" id="subId">
+    <label>الاسم</label><input id="subName" placeholder="اسم المشترك">
+    <label>الهاتف</label><input id="subPhone" inputmode="tel" placeholder="اختياري">
+    <label>عدد الأمبيرات</label><input type="number" id="subAmps" inputmode="decimal" placeholder="مثال: 14" oninput="subTotal()">
+    <label>أمبيرات مجانية لهذا المشترك (لا تُحسب من السعر)</label><input type="number" id="subExtra" inputmode="decimal" placeholder="0" oninput="subTotal()">
+    <input type="hidden" id="subPrice">
+    <div class="stats" id="subAmpBoxes" style="margin-top:10px"></div>
+    <p class="hint" id="subTotalHint"></p>
+    <label>رصيد سابق (دين عليه = رقم موجب، له = سالب)</label><input type="number" id="subOpening" inputmode="decimal" value="0">
+    <div id="subAddWeekWrap" style="display:none;margin-top:10px"><label style="display:flex;align-items:center;gap:8px;font-size:15px;color:var(--ink)"><input type="checkbox" id="subAddWeek" checked style="width:22px;height:22px"> <span id="subAddWeekLbl">إضافته إلى الأسبوع الحالي</span></label></div>
+    <p class="hint">لحذف المشترك: من صفحة المشتركين اضغط زر حذف بجانب اسمه.</p>
+    <div class="btns"><button class="primary" onclick="saveSub()">حفظ</button><button onclick="closeSheets()">إلغاء</button><button id="subToggle" onclick="toggleSub()">إيقاف</button></div>
+  </div>
+</div>
+
+<!-- تسجيل الاشتراك الشهري -->
+<div class="overlay" id="monthSheet" onclick="if(event.target===this)closeSheets()">
+  <div class="sheet">
+    <h3>تسجيل الاشتراك الأسبوعي</h3>
+    <p class="hint">يُضاف لكل مشترك نشط مبلغ = عدد الأمبيرات × سعر الأمبير، كدَين عليه لهذا الأسبوع (يبدأ الأسبوع يوم السبت). تختار تاريخ الأسبوع الأول يدويًا، وبعده تُحدَّد الأسابيع تلقائيًا كل 7 أيام. الاشتراكات السابقة غير المسددة تبقى دَينًا على المشترك ولا تُلغى.</p>
+    <div id="monthManual"><label>تاريخ بداية الأسبوع الأول</label><input type="date" id="monthPick" onchange="document.getElementById('monthAuto').textContent=weekLabel(this.value);previewMonthly()"></div><div class="stat net" style="margin-top:6px"><small id="monthAutoLbl">الأسبوع الذي سيُضاف</small><b id="monthAuto"></b></div>
+    <div id="monthPreview" class="hint"></div>
+    <div class="btns"><button class="sun" onclick="runMonthly()">تسجيل الآن</button><button onclick="closeSheets()">إلغاء</button></div>
+  </div>
+</div>
+
+<!-- كشف حساب مشترك -->
+<div class="overlay" id="acctSheet" onclick="if(event.target===this)closeSheets()">
+  <div class="sheet">
+    <h3 id="acctTitle">كشف حساب</h3>
+    <h2 style="margin-top:4px">عدد الأمبيرات: <span id="acctAmps"></span></h2>
+    <div id="acctAmpBoxes" class="stats" style="margin-bottom:10px"></div>
+    <div id="acctSummary" class="stats" style="margin-bottom:10px"></div>
+    <div class="btns"><button class="primary" id="payAll" onclick="payFull()">قبض</button><button onclick="openTx('in',currentAcct)">قبض مبلغ جزئي</button><button onclick="openSub(currentAcct)">تعديل بياناته</button><button onclick="offerNotify(currentAcct,0,null)" id="acctNotify">📲 إرسال كشف حساب</button></div>
+    <div id="acctWeeks"></div>
+    <h2>الحركات</h2>
+    <div id="acctList"></div>
+  </div>
+</div>
+
+<div class="overlay" id="askSheet" style="z-index:30;align-items:center">
+  <div class="sheet" style="border-radius:18px;max-width:420px;width:calc(100% - 32px)">
+    <p id="askMsg" style="margin:0 0 14px;font-size:16px"></p>
+    <div class="btns" style="margin:0"><button class="danger" id="askYes">تأكيد</button><button id="askNo">إلغاء</button></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- التخزين ---------- */
+const state = { subs:{}, tx:{}, settings:{price:750,cur:'',name:''} };
+let db=null, ready=false;
+const LS='solar-cash-v1';
+
+function lsLoad(){ try{ const r=JSON.parse(localStorage.getItem(LS)||'null'); if(r){Object.assign(state,r);} }catch(e){} }
+function lsSave(){ try{ localStorage.setItem(LS, JSON.stringify(state)); }catch(e){} }
+
+async function initStore(){
+  lsLoad(); if(!state.settings.price) state.settings.price=750; sbCfgLoad(); render();
+  if(sbOn()){ document.getElementById('sbUrl').value=SB.url; document.getElementById('sbKey').value=SB.key; await sbPull(); sbTimer(); } else sbSetStatus('المزامنة متوقفة — البيانات محلية على هذا الجهاز');
+  try{
+    if(!sbOn() && window.claude && claude.use){ db = await claude.use('db'); }
+  }catch(e){ db=null; }
+  if(db){
+    const apply=(bucket)=>s=>{ s.docChanges().forEach(c=>{ if(c.type==='removed') delete state[bucket][c.doc.id]; else state[bucket][c.doc.id]=c.doc.data(); }); ready=true; lsSave(); render(); };
+    db.collection('subs').onSnapshot(apply('subs'), ()=>{ db=null; setStatus('التخزين: محلي على هذا الجهاز فقط'); });
+    db.collection('tx').onSnapshot(apply('tx'), ()=>{});
+    db.doc('meta/settings').onSnapshot(s=>{ if(s.exists) state.settings={...state.settings,...s.data()}; render(); }, ()=>{});
+    setStatus('التخزين: سحابي مشترك (يظهر لكل من يفتح الصفحة)');
+  } else if(!sbOn()) {
+    setStatus('التخزين: محلي على هذا الجهاز فقط — خذ نسخة احتياطية من الإعدادات');
+  } else setStatus('');
+}
+function setStatus(t){ document.getElementById('storeStatus').textContent=t; }
+
+async function putSub(id,data){ state.subs[id]=data; lsSave(); render(); sbPush('sub',id,data); if(db){ try{ await db.doc('subs/'+id).set(data);}catch(e){toast('تعذر الحفظ سحابيًا');} } }
+async function delSubDoc(id){ delete state.subs[id]; lsSave(); render(); sbPush('sub',id,{},true); if(db){ try{ await db.doc('subs/'+id).delete();}catch(e){} } }
+async function putTx(id,data){ state.tx[id]=data; lsSave(); render(); sbPush('tx',id,data); if(db){ try{ await db.doc('tx/'+id).set(data);}catch(e){toast('تعذر الحفظ سحابيًا');} } }
+async function delTxDoc(id){ delete state.tx[id]; lsSave(); render(); sbPush('tx',id,{},true); if(db){ try{ await db.doc('tx/'+id).delete();}catch(e){} } }
+async function delWithRetry(path){ if(!db) return true; for(let i=0;i<6;i++){ try{ await db.doc(path).delete(); return true; }catch(e){ await new Promise(r=>setTimeout(r,300*Math.pow(2,i))); } } return false; }
+async function delMany(bucket,ids){ let failed=0; for(const id of ids){ delete state[bucket][id]; await sbPush(bucket==='tx'?'tx':'sub',id,{},true); const ok=await delWithRetry((bucket==='tx'?'tx/':'subs/')+id); if(!ok) failed++; await new Promise(r=>setTimeout(r,60)); } lsSave(); render(); return failed; }
+async function putSettings(){ lsSave(); render(); sbPush('settings','main',state.settings); if(db){ try{ await db.doc('meta/settings').set(state.settings);}catch(e){} } }
+
+/* ---------- المزامنة السحابية ---------- */
+const SB={url:'',key:''};
+function sbCfgLoad(){ try{ const c=JSON.parse(localStorage.getItem('sb-cfg')||'null'); if(c){ SB.url=(c.url||'').replace(/\/+$/,''); SB.key=c.key||''; } }catch(e){} }
+function sbOn(){ return !!(SB.url&&SB.key); }
+function sbReq(path,opts){ opts=opts||{}; return fetch(SB.url+'/rest/v1/'+path,{...opts,headers:{apikey:SB.key,Authorization:'Bearer '+SB.key,'Content-Type':'application/json',...(opts.headers||{})}}); }
+async function sbPush(kind,id,data,deleted){ if(!sbOn()) return; try{ await sbReq('amps_rows',{method:'POST',headers:{Prefer:'resolution=merge-duplicates'},body:JSON.stringify({id:kind+':'+id,kind,data:data||{},deleted:!!deleted,updated_at:new Date().toISOString()})}); }catch(e){ sbSetStatus('تعذر الحفظ سحابيًا — سيُعاد المحاولة'); } }
+let sbBusy=false;
+async function sbPull(){ if(!sbOn()||sbBusy) return; sbBusy=true;
+  try{ const r=await sbReq('amps_rows?select=id,kind,data,deleted&limit=5000'); if(!r.ok) throw 0; const rows=await r.json();
+    const subs={},tx={}; let st=null;
+    rows.forEach(x=>{ if(x.deleted) return; const id=String(x.id).slice(String(x.kind).length+1);
+      if(x.kind==='sub') subs[id]=x.data; else if(x.kind==='tx') tx[id]=x.data; else if(x.kind==='settings') st=x.data; });
+    state.subs=subs; state.tx=tx; if(st) state.settings={...state.settings,...st};
+    lsSave(); render(); sbSetStatus('المزامنة تعمل ✓ — آخر تحديث '+new Date().toLocaleTimeString('en-GB'));
+  }catch(e){ sbSetStatus('تعذر الاتصال بقاعدة البيانات — تحقق من الرابط والمفتاح'); }
+  sbBusy=false; }
+function sbSetStatus(t){ const e=document.getElementById('sbStatus'); if(e) e.textContent=t; }
+async function sbSave(){ const u=(document.getElementById('sbUrl').value||'').trim().replace(/\/+$/,''); const k=(document.getElementById('sbKey').value||'').trim();
+  if(!u||!k){ toast('أدخل الرابط والمفتاح'); return; }
+  SB.url=u; SB.key=k; localStorage.setItem('sb-cfg',JSON.stringify({url:u,key:k}));
+  sbSetStatus('جارٍ الاتصال…'); const r=await sbReq('amps_rows?select=id&limit=1').catch(()=>null);
+  if(!r||!r.ok){ sbSetStatus('فشل الاتصال — تأكد من الرابط والمفتاح'); toast('فشل الاتصال'); return; }
+  toast('تم تشغيل المزامنة'); await sbPull(); sbTimer();
+}
+function sbOff(){ SB.url=''; SB.key=''; localStorage.removeItem('sb-cfg'); sbSetStatus('المزامنة متوقفة — البيانات محلية على هذا الجهاز'); toast('أُوقفت المزامنة'); }
+async function sbUploadAll(){ if(!sbOn()){ toast('شغّل المزامنة أولًا'); return; }
+  sbSetStatus('جارٍ رفع بيانات هذا الجهاز…');
+  for(const [id,x] of Object.entries(state.subs)) await sbPush('sub',id,x);
+  for(const [id,x] of Object.entries(state.tx)) await sbPush('tx',id,x);
+  await sbPush('settings','main',state.settings);
+  toast('تم الرفع'); await sbPull(); }
+let sbInt=null;
+function sbTimer(){ if(sbInt) clearInterval(sbInt); if(sbOn()) sbInt=setInterval(sbPull,12000); }
+
+/* ---------- أدوات ---------- */
+function askThen(msg,onYes){ return new Promise(res=>{ const o=document.getElementById('askSheet'); document.getElementById('askMsg').textContent=msg; o.classList.add('open');
+  const y=document.getElementById('askYes'), n=document.getElementById('askNo'); const done=v=>{ o.classList.remove('open'); y.onclick=n.onclick=null; res(v); };
+  y.onclick=()=>{ try{ onYes&&onYes(); }catch(e){} done(true); }; n.onclick=()=>done(false); }); }
+function waUrl(ph,txt){ return `https://wa.me/${ph}?text=${encodeURIComponent(txt)}`; }
+function openWa(ph,txt){ if(!ph) return false; const u=waUrl(ph,txt); let win=null; try{ win=window.open(u,'_blank'); }catch(e){} if(!win){ setTimeout(()=>{ document.getElementById('notifyWho').textContent=''; document.getElementById('notifyWa').href=u; document.getElementById('notifySms').href=`sms:${ph}?&body=${encodeURIComponent(txt)}`; document.getElementById('notifyPreview').textContent=txt; document.getElementById('notifySheet').classList.add('open'); },300); } return true; }
+function ask(msg){ return new Promise(res=>{ const o=document.getElementById('askSheet'); document.getElementById('askMsg').textContent=msg; o.classList.add('open');
+  const done=v=>{ o.classList.remove('open'); y.onclick=n.onclick=null; res(v); }; const y=document.getElementById('askYes'), n=document.getElementById('askNo'); y.onclick=()=>done(true); n.onclick=()=>done(false); }); }
+const uid=()=> Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const today=()=> new Date().toISOString().slice(0,10);
+const thisMonth=()=> today().slice(0,7);
+const fmt=n=>{ const v=Math.round((+n||0)*100)/100; return v.toLocaleString('en-US')+(state.settings.cur?' '+state.settings.cur:''); };
+function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1800); }
+function esc(s){ return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function weekKey(d){ const x=new Date((d||today())+'T00:00:00'); const off=(x.getDay()+1)%7; x.setDate(x.getDate()-off); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); }
+function weekLabel(k){ const a=new Date(k+'T00:00:00'), b=new Date(a); b.setDate(a.getDate()+6); const f=d=>d.getDate()+'/'+(d.getMonth()+1); return 'أسبوع '+f(a)+' – '+f(b)+'/'+b.getFullYear(); }
+function monthName(m){ const [y,mo]=m.split('-'); return ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'][+mo-1]+' '+y; }
+
+function extraOf(s){ return (s&&s.extra!=null)?+s.extra:0; }
+function balanceOf(id){ // موجب = دين على المشترك
+  const s=state.subs[id]; let b=+(s?.opening||0);
+  for(const t of Object.values(state.tx)){ if(t.subscriberId!==id) continue; if(t.type==='charge') b+=+t.amount; if(t.type==='in') b-=+t.amount; }
+  return b;
+}
+function weekAlloc(id){ // يعيد كل الاشتراكات مع المتبقي منها؛ الدفعات المرتبطة بأسبوع تُخصم منه أولًا ثم الباقي على الأقدم
+  const s=state.subs[id]; if(!s) return [];
+  const items=[]; if(+s.opening>0) items.push({key:'opening',label:'رصيد سابق',amount:+s.opening,date:''});
+  Object.values(state.tx).filter(t=>t.subscriberId===id&&t.type==='charge').sort((a,b)=>(a.date||'').localeCompare(b.date||'')).forEach(t=>items.push({key:t.week||t.date,label:t.note||t.date,amount:+t.amount,date:t.date}));
+  items.forEach(i=>i.remaining=i.amount);
+  let free=(+s.opening<0?-s.opening:0);
+  Object.values(state.tx).filter(t=>t.subscriberId===id&&t.type==='in').forEach(t=>{ const it=t.week&&items.find(i=>i.key===t.week); if(it){ const u=Math.min(it.remaining,+t.amount); it.remaining-=u; free+=(+t.amount-u); } else free+=+t.amount; });
+  for(const it of items){ const u=Math.min(free,it.remaining); it.remaining-=u; free-=u; }
+  return items;
+}
+function unpaidWeeks(id){ return weekAlloc(id).filter(i=>i.remaining>0.001); }
+function txList(){ return Object.entries(state.tx).map(([id,t])=>({id,...t})).sort((a,b)=> (b.date||'').localeCompare(a.date||'') || (b.createdAt||0)-(a.createdAt||0)); }
+
+/* ---------- التنقل ---------- */
+function go(v){ if((v==='subs'||v==='set'||v==='rep')&&!ownerOpen){ v='owner'; renderOwner(); toast('أدخل كلمة سر صاحب الشركة أولًا'); }
+  if(v==='subs'||v==='set'||v==='rep') { document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v==='owner')); document.querySelectorAll('.view').forEach(e=>e.classList.toggle('active',e.id==='v-'+v)); window.scrollTo(0,0); return; }
+  document.querySelectorAll('.view').forEach(e=>e.classList.toggle('active',e.id==='v-'+v)); document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); window.scrollTo(0,0); }
+function closeSheets(){ document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('open')); }
+
+/* ---------- العرض ---------- */
+function render(){
+  const all=txList();
+  const totIn=all.filter(t=>t.type==='in').reduce((a,t)=>a+ +t.amount,0);
+  const totOut=all.filter(t=>t.type==='out').reduce((a,t)=>a+ +t.amount,0);
+  const totHand=all.filter(t=>t.type==='hand').reduce((a,t)=>a+ +t.amount,0);
+  const regWeeks=[...new Set(all.filter(t=>t.type==='charge').map(t=>t.week||t.date))].sort();
+  const weekHasRem=w=>all.filter(t=>t.type==='charge'&&(t.week||t.date)===w).some(t=>{ const al=weekAlloc(t.subscriberId).find(i=>i.key===w); return al&&al.remaining>0.001; });
+  const firstOpen=regWeeks.find(weekHasRem);
+  const wk= firstOpen || (regWeeks.length? regWeeks[regWeeks.length-1] : weekKey(today())); const wEnd=(()=>{const d=new Date(wk+'T00:00:00'); d.setDate(d.getDate()+6); return d.toISOString().slice(0,10);})();
+  const inWeek=t=>(t.date||'')>=wk&&(t.date||'')<=wEnd;
+  const cashIn=all.filter(t=>t.type==='in'&&inWeek(t)).reduce((a,t)=>a+ +t.amount,0);
+  const wkCharges=all.filter(t=>t.type==='charge'&&(t.week||t.date)===wk);
+  const wkRegistered=wkCharges.length>0;
+  const expIn= wkRegistered? wkCharges.reduce((a,t)=>a+ +t.amount,0) : Object.values(state.subs).filter(x=>x.active!==false).reduce((a,x)=>a+(+x.amps||0)*(+x.price||+state.settings.price||0),0);
+  const mIn= wkRegistered? wkCharges.reduce((a,t)=>{ const al=weekAlloc(t.subscriberId).find(i=>i.key===wk); return a+(al? al.amount-al.remaining : 0); },0) : 0;
+  const mOut=all.filter(t=>t.type==='out'&&inWeek(t)).reduce((a,t)=>a+ +t.amount,0);
+  const debts=Object.keys(state.subs).map(id=>({id,b:balanceOf(id)}));
+  const totDebt=debts.filter(d=>d.b>0).reduce((a,d)=>a+d.b,0);
+  const amps=Object.values(state.subs).filter(s=>s.active!==false).reduce((a,s)=>a+ +(s.amps||0),0);
+
+  const nSubs=Object.values(state.subs).filter(s=>s.active!==false).length, freeA=Object.values(state.subs).filter(x=>x.active!==false).reduce((a,x)=>a+extraOf(x),0);
+  const pctH= expIn>0? Math.min(100,Math.round(mIn/expIn*100)) : 0;
+  document.getElementById('stats').innerHTML=`
+    <div class="hero">
+      <div class="hero-t">📅 ${weekLabel(wk)}${wkRegistered?'':' <span class="hero-tag">لم يُسجَّل بعد</span>'}</div>
+      <small>قيمة اشتراك الأسبوع</small>
+      <div class="hero-v">${fmt(expIn)}</div>
+      <div class="hbar"><i style="width:${pctH}%"></i></div>
+      <div class="hero-row"><div class="box-ok"><small>المحصَّل</small><b>${fmt(mIn)}</b></div><div class="box-bad"><small>المتبقي</small><b>${fmt(Math.max(0,expIn-mIn))}</b></div><div><small>نسبة التحصيل</small><b>${pctH}%</b></div></div>
+    </div>
+    <div class="stat ico"><span class="ic">👥</span><small>عدد المشتركين</small><b>${nSubs}</b></div>
+    <div class="stat ico"><span class="ic">⚡</span><small>الأمبيرات المدفوعة</small><b>${amps}</b></div>
+    <div class="stat ico" style="grid-column:1/-1"><span class="ic">🎁</span><small>الأمبيرات المجانية</small><b class="c-in">${freeA}</b></div>`;
+
+  const dl=debts.filter(d=>d.b>0).sort((a,b)=>b.b-a.b).slice(0,8);
+
+  // المشتركين
+  const q=(document.getElementById('subSearch').value||'').trim();
+  const subs=Object.entries(state.subs).map(([id,s])=>({id,...s,b:balanceOf(id)})).filter(s=>!q||(s.name||'').includes(q)||(s.phone||'').includes(q)).sort((a,b)=>(a.name||'').localeCompare(b.name||'','ar'));
+  document.getElementById('subList').innerHTML= subs.length? `<div class="tblwrap"><table class="subs"><thead><tr><th rowspan="2">اسم المشترك</th><th colspan="2" style="text-align:center;border-bottom:1px solid rgba(255,255,255,.35)">عدد الأمبيرات</th><th rowspan="2">سعر الأمبير</th><th rowspan="2">المجموع</th><th rowspan="2">الرصيد</th><th rowspan="2">إجراء</th></tr><tr><th style="text-align:center;font-weight:500">مدفوعة</th><th style="text-align:center;font-weight:500">مجانية</th></tr></thead><tbody>${subs.map(rowSubT).join('')}</tbody><tfoot><tr><td>الإجمالي (${subs.length})</td><td class="n">${subs.reduce((a,x)=>a+ +(x.amps||0),0)}</td><td class="n credit">${subs.reduce((a,x)=>a+extraOf(x),0)}</td><td></td><td class="n">${fmt(subs.reduce((a,x)=>a+(+x.amps||0)*(+x.price||+state.settings.price||0),0))}</td><td class="n debt">${fmt(subs.reduce((a,x)=>a+(x.b>0?x.b:0),0))}</td><td></td></tr></tfoot></table></div>` : '<div class="empty">لا يوجد مشتركين. أضف أول مشترك.</div>';
+
+  { const paidA=subs.reduce((a,x)=>a+ +(x.amps||0),0), freeA=subs.reduce((a,x)=>a+extraOf(x),0);
+    document.getElementById('subAmpsTotal').innerHTML= subs.length? `<div class="stat net"><small>إجمالي عدد الأمبيرات</small><b>${paidA+freeA} أمبير</b></div><div class="stat"><small>مدفوعة</small><b>${paidA}</b></div><div class="stat"><small>مجانية</small><b class="c-in">${freeA}</b></div>` : ''; }
+
+  // المتأخرون عن السداد
+  { const nd=(state.settings.remindDays??3); const late=[];
+    for(const w of [...new Set(all.filter(t=>t.type==='charge').map(t=>t.week||t.date))]) { if(today()<addDays(w,nd)) continue;
+      all.filter(t=>t.type==='charge'&&(t.week||t.date)===w).forEach(t=>{ const al=weekAlloc(t.subscriberId).find(i=>i.key===w); if(al&&al.remaining>0.001) late.push({id:t.subscriberId,name:state.subs[t.subscriberId]?.name||'',w,rem:al.remaining,days:Math.floor((new Date(today())-new Date(w))/86400000)}); }); }
+    late.sort((a,b)=>b.days-a.days);
+    document.getElementById('lateBox').innerHTML= late.length? `<div class="card" style="border-color:#c62828;background:var(--out-bg)"><h2 style="margin:0 0 8px;color:#c62828">⏰ متأخرون عن السداد (${late.length})</h2>${late.map(x=>`<div class="row" style="margin-bottom:6px"><div class="grow"><div class="t">${esc(x.name)}</div><div class="s">${weekLabel(x.w)} · متأخر ${x.days} يوم</div></div><div class="amt debt">${fmt(x.rem)}</div><span class="pill red" style="cursor:pointer" onclick="remindWeek('${x.id}','${x.w}',${x.rem})">مطالبة</span></div>`).join('')}</div>` : '';
+    document.title= late.length? `(${late.length}) حساب الأمبيرات` : 'حساب الأمبيرات'; }
+
+  // الأسابيع
+  const weeks=[...new Set(all.filter(t=>t.type==='charge').map(t=>t.week||t.date))].sort();
+  document.getElementById('weeksList').innerHTML= weeks.length? weeks.map(w=>{
+    let rows=all.filter(t=>t.type==='charge'&&(t.week||t.date)===w).map(t=>{ const al=weekAlloc(t.subscriberId).find(i=>i.key===w); return {id:t.subscriberId,name:state.subs[t.subscriberId]?.name||'مشترك محذوف',amount:+t.amount,rem:al?al.remaining:0}; }).sort((a,b)=>a.name.localeCompare(b.name,'ar'));
+    const tot=rows.reduce((a,r)=>a+r.amount,0), rem=rows.reduce((a,r)=>a+r.rem,0);
+    const wq=(document.getElementById('weekSearch').value||'').trim(); if(wq){ rows=rows.filter(r=>r.name.includes(wq)); if(!rows.length) return ''; }
+    if(!showPaid){ rows=rows.filter(r=>r.rem>0.001); if(!rows.length) return ''; }
+    const pct= tot>0? Math.round((tot-rem)/tot*100) : 0; const nAll=all.filter(t=>t.type==='charge'&&(t.week||t.date)===w).length;
+    return `<div class="wcard"><p class="wt">📅 ${weekLabel(w)}</p>
+    <div class="wchips"><div class="wchip"><small>المشتركون</small><b>${nAll}</b></div><div class="wchip"><small>قيمة الأسبوع</small><b>${fmt(tot)}</b></div><div class="wchip"><small>مسدَّد</small><b class="c-in">${fmt(tot-rem)}</b></div><div class="wchip"><small>متبقي</small><b class="c-out">${fmt(rem)}</b></div></div>
+    <div class="wbar"><i style="width:${pct}%"></i></div>
+    <div class="tblwrap"><table class="subs"><thead><tr><th>المشترك</th><th>المبلغ</th><th>الحالة</th><th></th></tr></thead><tbody>${rows.map(r=>`<tr style="cursor:default"><td class="nm">${esc(r.name)}</td><td class="n">${fmt(r.amount)}</td><td class="n">${r.rem>0.001?`<span class="pill red" style="cursor:pointer" onclick="event.stopPropagation();remindWeek('${r.id}','${w}',${r.rem})">${r.rem<r.amount-0.001?'متبقي '+fmt(r.rem):'غير مسدد'}</span>`:'<span class="pill blue">✓ مسدد</span>'}</td><td class="n">${r.rem>0.001?`<button class="sm primary" onclick="event.stopPropagation();payWeek('${r.id}','${w}')">قبض</button>`:''}</td></tr>`).join('')}</tbody><tfoot><tr><td>الإجمالي</td><td class="n">${fmt(tot)}</td><td class="n debt">${rem>0.001?'متبقي '+fmt(rem):'مسدد بالكامل'}</td><td></td></tr></tfoot></table></div></div>`; }).join('') : '';
+  if(!document.getElementById('weeksList').innerHTML) document.getElementById('weeksList').innerHTML= weeks.length? '<div class="empty">كل الأسابيع مسدَّدة بالكامل ✓ — اضغط "عرض المسدَّد" لرؤيتها.</div>' : '<div class="empty">لم يُسجَّل أي أسبوع بعد. اضغط "إضافة أسبوع جديد".</div>';
+  document.getElementById('showPaidBtn').textContent= showPaid? 'إخفاء المسدَّد' : 'عرض المسدَّد';
+
+  // الحركات
+  const ft=document.getElementById('txType').value, fm=document.getElementById('txMonth').value;
+  const fl=all.filter(t=>(!ft||t.type===ft)&&(!fm||(t.date||'').startsWith(fm)));
+  const fIn=fl.filter(t=>t.type==='in').reduce((a,t)=>a+ +t.amount,0), fOut=fl.filter(t=>t.type==='out').reduce((a,t)=>a+ +t.amount,0), fCh=fl.filter(t=>t.type==='charge').reduce((a,t)=>a+ +t.amount,0);
+  document.getElementById('txSummary').innerHTML=`<div class="stat"><small>قبض</small><b class="c-in">${fmt(fIn)}</b></div><div class="stat"><small>دفع</small><b class="c-out">${fmt(fOut)}</b></div><div class="stat"><small>اشتراكات مسجلة</small><b class="c-charge">${fmt(fCh)}</b></div><div class="stat"><small>مُسلَّم</small><b class="c-hand">${fmt(fl.filter(t=>t.type==='hand').reduce((a,t)=>a+ +t.amount,0))}</b></div>`;
+  document.getElementById('txList').innerHTML= fl.length? fl.map(rowTx).join('') : '<div class="empty">لا توجد حركات مطابقة.</div>';
+
+  // الإعدادات
+  if(document.activeElement?.id!=='setPrice') document.getElementById('setPrice').value=state.settings.price||'';
+  if(document.activeElement?.id!=='setFirst'){ document.getElementById('setFirst').value=state.settings.firstWeek||''; document.getElementById('setFirstTo').value= state.settings.firstWeek? (()=>{const d=new Date(state.settings.firstWeek+'T00:00:00'); d.setDate(d.getDate()+6); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})() : ''; }
+  if(document.activeElement?.id!=='setRemind') document.getElementById('setRemind').value=(state.settings.remindDays??3);
+  if(document.activeElement?.id!=='setRemindTxt') document.getElementById('setRemindTxt').value=state.settings.remindTxt||'';
+  if(document.activeElement?.id!=='setCC') document.getElementById('setCC').value=state.settings.cc||'';
+  if(document.activeElement?.id!=='setCur') document.getElementById('setCur').value=state.settings.cur||'';
+  if(document.activeElement?.id!=='setName') document.getElementById('setName').value=state.settings.name||'';
+  if(state.settings.name) document.querySelector('header p').textContent=state.settings.name;
+
+  if(currentAcct && document.getElementById('acctSheet').classList.contains('open')) renderAcct();
+  if(document.getElementById('v-owner').classList.contains('active')) renderOwner();
+  if(document.getElementById('v-rep').classList.contains('active')) renderReports();
+}
+function rowSub(id,b){
+  const s=state.subs[id]; const bal= b>0?`<span class="debt">عليه ${fmt(b)}</span>`: b<0?`<span class="credit">له ${fmt(-b)}</span>`:`<span class="s">مسدد</span>`;
+  return `<div class="row" onclick="openAcct('${id}')"><div class="grow"><div class="t">${esc(s.name)}${s.active===false?' <span class="tag out">موقوف</span>':''}</div><div class="s">${s.amps||0} أمبير × ${fmt(s.price||state.settings.price)} = <b>${fmt((+s.amps||0)*(+s.price||+state.settings.price||0))}</b> أسبوعيًا ${s.phone?'· '+esc(s.phone):''}</div></div><div class="amt">${bal}</div></div>`;
+}
+async function quickDelete(id){ document.getElementById('subId').value=id; deleteSub(); }
+function rowSubT(x){
+  const price=+x.price||+state.settings.price||0, tot=(+x.amps||0)*price;
+  const nw=x.b>0?unpaidWeeks(x.id).length:0; const bal= x.b>0?`<span class="debt">${fmt(x.b)}</span>${nw>1?`<div class="s">${nw} اشتراكات</div>`:''}`: x.b<0?`<span class="credit">له ${fmt(-x.b)}</span>`:`<span class="s">مسدد</span>`;
+  return `<tr onclick="openAcct('${x.id}')"><td class="nm">${esc(x.name)}${x.active===false?' <span class="tag out">موقوف</span>':''}</td><td class="n">${x.amps||0}</td><td class="n credit">${extraOf(x)||0}</td><td class="n">${fmt(price)}</td><td class="n"><b>${fmt(tot)}</b></td><td class="n">${bal}</td><td class="n act"><button class="sm" onclick="event.stopPropagation();openSub('${x.id}')">تعديل</button>${x.b>0.001?'':`<button class="sm danger" style="border-color:var(--out)" onclick="event.stopPropagation();quickDelete('${x.id}')">حذف</button>`}</td></tr>`;
+}
+function rowTx(t){
+  const lbl={in:'قبض',out:'دفع',charge:'اشتراك',hand:'تسليم'}[t.type];
+  const who= t.type==='hand'? 'تسليم لصاحب العمل' : t.type==='out'? esc(t.category||'مصروف') : esc(state.subs[t.subscriberId]?.name||'مشترك محذوف');
+  const sign= t.type==='in'?'+':(t.type==='out'||t.type==='hand')?'−':'';
+  return `<div class="row"><span class="tag ${t.type}">${lbl}</span><div class="grow"><div class="t">${who}</div><div class="s">${t.date||''} ${t.note?'· '+esc(t.note):''}</div></div><div class="amt c-${t.type}">${sign}${fmt(t.amount)}</div><button class="sm danger" onclick="event.stopPropagation();removeTx('${t.id}')" aria-label="حذف">✕</button></div>`;
+}
+
+/* ---------- الحركات ---------- */
+let txType='in';
+function openTx(type,subId){
+  txType=type; setTxType(type);
+  const sel=document.getElementById('txSub');
+  sel.innerHTML=Object.entries(state.subs).sort((a,b)=>(a[1].name||'').localeCompare(b[1].name||'','ar')).map(([id,s])=>`<option value="${id}">${esc(s.name)} — ${balanceOf(id)>0?'عليه '+fmt(balanceOf(id)):'مسدد'}</option>`).join('');
+  if(type==='in'&&!sel.options.length){ toast('أضف مشتركًا أولًا'); go('subs'); return; }
+  if(subId) sel.value=subId;
+  document.getElementById('txAmt').value=''; document.getElementById('txNote').value=''; document.getElementById('txDate').value=today();
+  closeSheets(); document.getElementById('txSheet').classList.add('open'); setTimeout(()=>document.getElementById('txAmt').focus(),50);
+}
+function setTxType(t){ txType=t; document.getElementById('segIn').classList.toggle('on',t==='in'); document.getElementById('segOut').classList.toggle('on',t==='out');
+  document.getElementById('txSubWrap').style.display=t==='in'?'':'none'; document.getElementById('txCatWrap').style.display=t==='out'?'':'none';
+  document.getElementById('txTitle').textContent=t==='in'?'قبض من مشترك':'دفع مصروف'; }
+async function saveTx(){
+  const amt=+document.getElementById('txAmt').value; if(!(amt>0)){ toast('أدخل مبلغًا صحيحًا'); return; }
+  const d={type:txType,amount:amt,date:document.getElementById('txDate').value||today(),note:document.getElementById('txNote').value.trim(),createdAt:Date.now()};
+  if(txType==='in') d.subscriberId=document.getElementById('txSub').value; else d.category=document.getElementById('txCat').value;
+  await putTx(uid(),d); closeSheets(); toast(txType==='in'?'تم تسجيل القبض':'تم تسجيل الدفع'); if(txType==='in') offerNotify(d.subscriberId,amt,null);
+}
+async function removeTx(id){ if(!await ask('حذف هذه الحركة؟')) return; await delTxDoc(id); toast('حُذفت'); }
+
+/* ---------- البحث الصوتي ---------- */
+let recog=null;
+function voiceSearch(inputId){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){ toast('البحث الصوتي غير مدعوم في هذا المتصفح — جرّب فتح التطبيق من Safari أو Chrome'); return; }
+  const btn=document.getElementById(inputId==='subSearch'?'micSubs':'micWeeks'); const inp=document.getElementById(inputId);
+  if(recog){ try{recog.stop();}catch(e){} recog=null; btn.classList.remove('on'); return; }
+  recog=new SR(); recog.lang='ar-SA'; recog.interimResults=true; recog.maxAlternatives=1; recog.continuous=false;
+  btn.classList.add('on'); inp.placeholder='تحدّث الآن…';
+  recog.onresult=e=>{ let t=''; for(const r of e.results) t+=r[0].transcript; inp.value=t.trim(); render(); };
+  recog.onerror=e=>{ btn.classList.remove('on'); recog=null; toast(e.error==='not-allowed'?'اسمح للتطبيق باستخدام الميكروفون':'تعذر التعرف على الصوت، أعد المحاولة'); };
+  recog.onend=()=>{ btn.classList.remove('on'); recog=null; inp.placeholder='بحث باسم المشترك'; render(); };
+  try{ recog.start(); }catch(e){ btn.classList.remove('on'); recog=null; toast('تعذر تشغيل الميكروفون'); }
+}
+
+/* ---------- إشعار المشترك ---------- */
+function phoneIntl(ph){ let d=(ph||'').replace(/[^0-9]/g,''); if(!d) return ''; if(d.startsWith('00')) d=d.slice(2); let cc=(state.settings.cc||'').replace(/[^0-9]/g,''); cc=cc.replace(/^0+/,''); if(cc && d.startsWith('0')) d=cc+d.slice(1); else if(cc && !d.startsWith(cc) && d.length<=10) d=cc+d; return d; }
+function receiptText(id,amount,wk){ const s=state.subs[id]; const bal=balanceOf(id); const name=state.settings.name||'حساب الأمبيرات';
+  return `${name}\nالمشترك: ${s.name}\n${amount>0?`تم استلام مبلغ: ${fmt(amount)}${wk?`\nعن: ${weekLabel(wk)}`:''}\n`:''}التاريخ: ${today()}\n${bal>0.001?`المتبقي عليكم: ${fmt(bal)}`:'حسابكم مسدَّد بالكامل ✅'}\nشكرًا لكم.`; }
+function notifyLinks(id,amount,wk){ const s=state.subs[id]; const ph=phoneIntl(s?.phone); if(!ph) return null; const t=encodeURIComponent(receiptText(id,amount,wk)); return {wa:waUrl(ph,receiptText(id,amount,wk)),sms:`sms:${ph}?&body=${t}`}; }
+async function offerNotify(id,amount,wk){ const l=notifyLinks(id,amount,wk); const box=document.getElementById('notifySheet'); if(!l){ return; }
+  document.getElementById('notifyWho').textContent=state.subs[id]?.name||''; document.getElementById('notifyWa').href=l.wa; document.getElementById('notifySms').href=l.sms; document.getElementById('notifyPreview').textContent=receiptText(id,amount,wk); box.classList.add('open'); }
+
+function addDays(k,n){ const d=new Date(k+'T00:00:00'); d.setDate(d.getDate()+n); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function fmtD(k){ const [y,m,d]=k.split('-'); return +d+'/'+ +m; }
+function remindText(s,w,rem){ const name=state.settings.name||'حساب الأمبيرات'; return state.settings.remindTxt ? state.settings.remindTxt.replace(/\{الاسم\}/g,s.name).replace(/\{الأسبوع\}/g,weekLabel(w)).replace(/\{المبلغ\}/g,fmt(rem)) : `${name}\nالأخ/الأخت ${s.name}،\nنذكّركم بأن اشتراك الأمبيرات عن ${weekLabel(w)} لم يُسدَّد بعد.\nالمبلغ المطلوب: ${fmt(rem)}\nيرجى التسديد في أقرب وقت. شكرًا لتعاونكم.`; }
+function remindHref(id,w,rem){ const s=state.subs[id]; if(!s) return ''; const nd=(state.settings.remindDays??3); if(nd>0 && today()<addDays(w,nd)) return ''; const ph=phoneIntl(s.phone); if(!ph) return ''; return waUrl(ph,remindText(s,w,rem)); }
+async function remindWeek(id,w,rem){
+  const s=state.subs[id]; if(!s) return;
+  const nd=(state.settings.remindDays??3); const due=addDays(w,nd);
+  if(nd>0 && today()<due){ toast(`المطالبة تُتاح بعد ${nd} يوم من بداية الأسبوع (ابتداءً من ${fmtD(due)})`); return; }
+  const ph=phoneIntl(s.phone); if(!ph){ toast('لا يوجد رقم هاتف لهذا المشترك'); return; }
+  const txt=remindText(s,w,rem);
+  await askThen(`إرسال مطالبة إلى ${s.name} عن ${weekLabel(w)} بمبلغ ${fmt(rem)}؟ (سيفتح واتساب)`,()=>openWa(ph,txt));
+}
+
+/* ---------- التسليم لصاحب العمل ---------- */
+function inHand(){ const a=txList(); return a.filter(t=>t.type==='in').reduce((x,t)=>x+ +t.amount,0)-a.filter(t=>t.type==='out'||t.type==='hand').reduce((x,t)=>x+ +t.amount,0); }
+function openHand(){ const h=inHand(); document.getElementById('handHint').textContent=`في عهدة العامل الآن: ${fmt(h)}`; document.getElementById('handAmt').value=h>0?Math.round(h*100)/100:''; document.getElementById('handDate').value=today(); document.getElementById('handNote').value=''; closeSheets(); document.getElementById('handSheet').classList.add('open'); }
+async function saveHand(){ const amt=+document.getElementById('handAmt').value; if(!(amt>0)){ toast('أدخل مبلغًا صحيحًا'); return; }
+  if(amt>inHand()+0.001 && !await ask(`المبلغ أكبر مما في عهدة العامل (${fmt(inHand())}). تسجيله على أي حال؟`)) return;
+  await putTx(uid(),{type:'hand',amount:amt,date:document.getElementById('handDate').value||today(),note:document.getElementById('handNote').value.trim(),createdAt:Date.now()}); closeSheets(); toast('تم تسجيل التسليم'); }
+
+/* ---------- المشتركين ---------- */
+function subTotal(){ const a=+document.getElementById('subAmps').value||0, p=+document.getElementById('subPrice').value||0; { const ex0=+document.getElementById('subExtra').value||0; document.getElementById('subAmpBoxes').innerHTML=`<div class="stat"><small>المدفوع</small><b>${a} أمبير</b></div><div class="stat"><small>مجانًا</small><b class="c-in">${ex0} أمبير</b></div>`; } const ex=+document.getElementById('subExtra').value||0; document.getElementById('subTotalHint').textContent= a&&p? `الاشتراك الأسبوعي: ${a} × ${fmt(p)} = ${fmt(a*p)}${ex?` — يحصل فعليًا على ${a+ex} أمبير (${ex} مجانًا)`:''}` : ''; }
+function openSub(id){
+  const s=id?state.subs[id]:null;
+  document.getElementById('subTitle').textContent=s?'تعديل مشترك':'مشترك جديد';
+  document.getElementById('subId').value=id||''; document.getElementById('subName').value=s?.name||''; document.getElementById('subPhone').value=s?.phone||'';
+  document.getElementById('subAmps').value=s?.amps||''; document.getElementById('subExtra').value=(s&&s.extra!=null&&s.extra!=='')?s.extra:''; document.getElementById('subPrice').value=state.settings.price||''; document.getElementById('subOpening').value=s?.opening||0;
+  subTotal(); const tg=document.getElementById('subToggle'); tg.style.display=s?'':'none'; tg.textContent=s&&s.active===false?'تفعيل':'إيقاف';
+  { const lw=latestWeek(); const wrap=document.getElementById('subAddWeekWrap'); if(!s && lw){ wrap.style.display=''; document.getElementById('subAddWeek').checked=true; document.getElementById('subAddWeekLbl').textContent='إضافته إلى الأسبوع الحالي ('+weekLabel(lw)+')'; } else wrap.style.display='none'; }
+  closeSheets(); document.getElementById('subSheet').classList.add('open'); setTimeout(()=>document.getElementById('subName').focus(),50);
+}
+async function saveSub(){
+  const name=(document.getElementById('subName').value||'').trim(); if(!name){ toast('اكتب اسم المشترك أولًا'); document.getElementById('subName').focus(); return; }
+  const id=document.getElementById('subId').value||uid(); const old=state.subs[id]||{};
+  await putSub(id,{...old,name,phone:document.getElementById('subPhone').value.trim(),amps:+document.getElementById('subAmps').value||0,extra:document.getElementById('subExtra').value===''?null:+document.getElementById('subExtra').value,price:0,opening:+document.getElementById('subOpening').value||0,active:old.active!==false,createdAt:old.createdAt||Date.now()});
+  const lw=latestWeek(); const wantWeek=!old.name && document.getElementById('subAddWeekWrap').style.display!=='none' && document.getElementById('subAddWeek').checked;
+  if(wantWeek && lw && !Object.values(state.tx).some(t=>t.type==='charge'&&t.subscriberId===id&&t.week===lw)){
+    const a=+document.getElementById('subAmps').value||0, pr=+state.settings.price||0;
+    await putTx(uid(),{type:'charge',subscriberId:id,amount:a*pr,date:lw,week:lw,note:'اشتراك '+weekLabel(lw),createdAt:Date.now()});
+    closeSheets(); toast('تم الحفظ وإضافته إلى '+weekLabel(lw)); return;
+  }
+  closeSheets(); toast('تم الحفظ');
+}
+async function deleteSub(){
+  const id=document.getElementById('subId').value; const s=state.subs[id]; if(!s) return;
+  const bal=balanceOf(id); if(bal>0.001){ await ask(`لا يمكن حذف "${s.name}" لأن عليه دَينًا قدره ${fmt(bal)}. سدّد حسابه أولًا ثم احذفه.`); return; }
+  const mine=Object.entries(state.tx).filter(([,t])=>t.subscriberId===id).map(([tid])=>tid);
+  const msg= mine.length? `تأكيد الحذف: سيُحذف المشترك "${s.name}" نهائيًا مع ${mine.length} حركة مسجلة له، ولا يمكن التراجع.` : `تأكيد الحذف: حذف المشترك "${s.name}" نهائيًا؟`;
+  if(!await ask(msg)) return;
+  const f=(await delMany('tx',mine))+(await delMany('subs',[id])); closeSheets(); if(f) await ask('تعذر إتمام الحذف كاملًا، أعد المحاولة.'); else toast('تم حذف المشترك');
+}
+async function toggleSub(){
+  const id=document.getElementById('subId').value; const s=state.subs[id]; if(!s) return;
+  await putSub(id,{...s,active:s.active===false}); closeSheets(); toast(s.active===false?'تم تفعيل المشترك':'تم إيقاف المشترك');
+}
+
+/* ---------- كشف الحساب ---------- */
+let currentAcct=null; let showPaid=false; let monthlyBusy=false;
+function openAcct(id){ currentAcct=id; closeSheets(); document.getElementById('acctSheet').classList.add('open'); renderAcct(); }
+function renderAcct(){
+  const s=state.subs[currentAcct]; if(!s) return closeSheets();
+  const b=balanceOf(currentAcct);
+  const list=txList().filter(t=>t.subscriberId===currentAcct);
+  const paid=list.filter(t=>t.type==='in').reduce((a,t)=>a+ +t.amount,0), charged=list.filter(t=>t.type==='charge').reduce((a,t)=>a+ +t.amount,0);
+  document.getElementById('acctTitle').textContent=s.name; document.getElementById('acctAmps').textContent=((+s.amps||0)+extraOf(s))+' أمبير';
+  document.getElementById('acctAmpBoxes').innerHTML=`<div class="stat"><small>المدفوع</small><b>${s.amps||0} أمبير</b></div><div class="stat"><small>مجانًا</small><b class="c-in">${extraOf(s)} أمبير</b></div>`;
+  const pb=document.getElementById('payAll'); pb.textContent= b>0? `قبض ${fmt(b)}` : 'قبض'; pb.disabled= !(b>0); pb.style.opacity= b>0?'1':'.5';
+  document.getElementById('acctSummary').innerHTML=`<div class="stat net"><small>${b>0?'المستحق عليه':b<0?'رصيد له':'الحالة'}</small><b>${b===0?'مسدد':fmt(Math.abs(b))}</b></div><div class="stat"><small>إجمالي المدفوع</small><b class="c-in">${fmt(paid)}</b></div><div class="stat"><small>إجمالي الاشتراكات</small><b class="c-charge">${fmt(charged+(+s.opening||0))}</b></div>`;
+  const uw=unpaidWeeks(currentAcct);
+  document.getElementById('acctWeeks').innerHTML= uw.length? `<h2>الاشتراكات غير المسددة (${uw.length})</h2>`+uw.map(w=>`<div class="row"><span class="tag charge">اشتراك</span><div class="grow"><div class="t">${esc(w.label)}</div><div class="s">${w.remaining<w.amount?'متبقي منه':'كامل'}</div></div><div class="amt debt">${fmt(w.remaining)}</div></div>`).join('') : '';
+  document.getElementById('acctList').innerHTML= list.length? list.map(rowTx).join('') : '<div class="empty">لا توجد حركات لهذا المشترك.</div>';
+}
+
+async function payFull(){
+  const id=currentAcct, s=state.subs[id]; if(!s) return; const b=balanceOf(id);
+  if(!(b>0)){ toast('لا يوجد مبلغ مستحق'); return; }
+  const ph=phoneIntl(s.phone); const nm=state.settings.name||'حساب الأمبيرات';
+  const rtxt=`${nm}\nالمشترك: ${s.name}\nتم استلام مبلغ: ${fmt(b)}\nالتاريخ: ${today()}\nحسابكم مسدَّد بالكامل ✅\nشكرًا لكم.`;
+  if(!await askThen(`تسجيل قبض ${fmt(b)} من ${s.name} وتسديد حسابه بالكامل؟${ph?' (سيفتح واتساب لإرسال الإيصال)':''}`,()=>openWa(ph,rtxt))) return;
+  await putTx(uid(),{type:'in',subscriberId:id,amount:b,date:today(),note:'تسديد كامل',createdAt:Date.now()});
+  toast('تم القبض وتسديد الحساب');
+}
+
+async function payWeek(id,w){
+  const s=state.subs[id]; const al=weekAlloc(id).find(i=>i.key===w); if(!s||!al||!(al.remaining>0)) return;
+  const amt=al.remaining; const ph=phoneIntl(s.phone); const balAfter=Math.max(0,balanceOf(id)-amt); const nm=state.settings.name||'حساب الأمبيرات';
+  const rtxt=`${nm}\nالمشترك: ${s.name}\nتم استلام مبلغ: ${fmt(amt)}\nعن: ${weekLabel(w)}\nالتاريخ: ${today()}\n${balAfter>0.001?`المتبقي عليكم: ${fmt(balAfter)}`:'حسابكم مسدَّد بالكامل ✅'}\nشكرًا لكم.`;
+  if(!await askThen(`قبض ${fmt(amt)} من ${s.name} عن ${weekLabel(w)}؟${ph?' (سيفتح واتساب لإرسال الإيصال)':''}`,()=>openWa(ph,rtxt))) return;
+  await putTx(uid(),{type:'in',subscriberId:id,amount:amt,date:today(),week:w,note:'تسديد '+weekLabel(w),createdAt:Date.now()});
+  toast('تم القبض');
+}
+
+/* ---------- الاشتراك الشهري ---------- */
+function nextWeekKey(){ const ws=[...new Set(Object.values(state.tx).filter(t=>t.type==='charge').map(t=>t.week||t.date))].sort(); if(!ws.length) return weekKey(today()); const d=new Date(ws[ws.length-1]+'T00:00:00'); d.setDate(d.getDate()+7); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function latestWeek(){ const ws=[...new Set(Object.values(state.tx).filter(t=>t.type==='charge').map(t=>t.week||t.date))].sort(); return ws.length? ws[ws.length-1] : ''; }
+function hasWeeks(){ return Object.values(state.tx).some(t=>t.type==='charge'); }
+function openMonthly(){ const p=document.getElementById('monthPick'); const first=!hasWeeks(); document.getElementById('monthManual').style.display=first?'':'none'; document.getElementById('monthAutoLbl').textContent=first?'الأسبوع الأول (اختر تاريخ بدايته)':'الأسبوع التالي يُحدَّد تلقائيًا'; const fw=state.settings.firstWeek; if(first&&fw){ document.getElementById('monthManual').style.display='none'; document.getElementById('monthAutoLbl').textContent='الأسبوع الأول (من الإعدادات)'; } p.value=first?(fw||today()):nextWeekKey(); document.getElementById('monthAuto').textContent=weekLabel(p.value); previewMonthly(); closeSheets(); document.getElementById('monthSheet').classList.add('open'); }
+function pendingMonthly(m){
+  return Object.entries(state.subs).filter(([id,s])=>s.active!==false && +(s.amps||0)>0 && !Object.values(state.tx).some(t=>t.type==='charge'&&t.subscriberId===id&&t.week===m))
+    .map(([id,s])=>({id,s,amount:(+s.amps||0)*(+s.price||+state.settings.price||0)}));
+}
+function previewMonthly(){ const m=document.getElementById('monthPick').value; const p=pendingMonthly(m); const tot=p.reduce((a,x)=>a+x.amount,0);
+  document.getElementById('monthPreview').textContent= p.length? `سيُسجَّل لـ ${p.length} مشترك بإجمالي ${fmt(tot)} عن ${weekLabel(m)}.` : `الاشتراك مسجّل لكل المشتركين عن ${weekLabel(m)} أو لا يوجد مشتركين نشطين.`; }
+async function runMonthly(){
+  if(monthlyBusy) return; const m=document.getElementById('monthPick').value; if(hasWeeks() && m!==nextWeekKey()){ toast('هذا الأسبوع مسجَّل بالفعل'); closeSheets(); return; } if(!m){ toast('اختر تاريخ بداية الأسبوع'); return; }
+  const p=pendingMonthly(m); if(!p.length){ toast('لا شيء لتسجيله'); return; }
+  if(!await ask(`إضافة ${weekLabel(m)} لـ ${p.length} مشترك؟`)) return; monthlyBusy=true;
+  if(p.some(x=>!(x.amount>0))){ if(!await ask('بعض المشتركين بدون سعر أمبير؛ سيُسجَّل لهم صفر. متابعة؟')) return; }
+  for(const x of p){ await putTx(uid(),{type:'charge',subscriberId:x.id,amount:x.amount,date:m,week:m,note:'اشتراك '+weekLabel(m),createdAt:Date.now()}); }
+  monthlyBusy=false; closeSheets(); toast('تم تسجيل الاشتراك الأسبوعي'); go('weeks');
+}
+
+/* ---------- صاحب الشركة ---------- */
+let ownerOpen=false;
+function ownerHasPass(){ return !!(state.settings.ownerPass); }
+function renderOwner(){
+  const lock=document.getElementById('ownerLock'), area=document.getElementById('ownerArea');
+  if(!ownerHasPass()){ document.getElementById('ownerLockTitle').textContent='إنشاء كلمة سر لصفحة صاحب الشركة'; document.getElementById('ownerLockLbl').textContent='كلمة السر الجديدة'; document.getElementById('ownerPass2Wrap').style.display=''; document.getElementById('ownerUnlockBtn').textContent='حفظ وفتح'; }
+  else { document.getElementById('ownerLockTitle').textContent='صفحة صاحب الشركة'; document.getElementById('ownerLockLbl').textContent='كلمة السر'; document.getElementById('ownerPass2Wrap').style.display='none'; document.getElementById('ownerUnlockBtn').textContent='فتح'; }
+  lock.style.display=ownerOpen?'none':''; area.style.display=ownerOpen?'':'none';
+  if(!ownerOpen) return;
+  const all=txList();
+  const totIn=all.filter(t=>t.type==='in').reduce((a,t)=>a+ +t.amount,0), totOut=all.filter(t=>t.type==='out').reduce((a,t)=>a+ +t.amount,0), totHand=all.filter(t=>t.type==='hand').reduce((a,t)=>a+ +t.amount,0);
+  const debt=Object.keys(state.subs).reduce((a,id)=>a+Math.max(0,balanceOf(id)),0);
+  const act=Object.values(state.subs).filter(x=>x.active!==false); const ampsN=act.reduce((a,x)=>a+ +(x.amps||0),0); const ampsV=act.reduce((a,x)=>a+(+x.amps||0)*(+x.price||+state.settings.price||0),0);
+  document.getElementById('ownerStats').innerHTML='';
+}
+async function ownerUnlock(){
+  const p=document.getElementById('ownerPass').value.trim();
+  if(!ownerHasPass()){ const p2=document.getElementById('ownerPass2').value.trim(); if(p.length<4){ toast('كلمة السر 4 خانات على الأقل'); return; } if(p!==p2){ toast('كلمتا السر غير متطابقتين'); return; }
+    state.settings.ownerPass=p; await putSettings(); ownerOpen=true; toast('تم إنشاء كلمة السر'); }
+  else if(p===state.settings.ownerPass){ ownerOpen=true; }
+  else { toast('كلمة السر غير صحيحة'); return; }
+  document.getElementById('ownerPass').value=''; document.getElementById('ownerPass2').value=''; renderOwner();
+}
+function ownerLockNow(){ ownerOpen=false; renderOwner(); }
+async function ownerChangePass(){ const p=document.getElementById('ownerNewPass').value.trim(); if(p.length<4){ toast('كلمة السر 4 خانات على الأقل'); return; } state.settings.ownerPass=p; document.getElementById('ownerNewPass').value=''; await putSettings(); toast('تم تغيير كلمة السر'); }
+
+/* ---------- التقارير ---------- */
+function renderReports(){
+  const all=txList(); const pays=all.filter(t=>t.type==='in');
+  const totIn=pays.reduce((a,t)=>a+ +t.amount,0);
+  const wk=weekKey(today()); const wEnd=(()=>{const d=new Date(wk+'T00:00:00'); d.setDate(d.getDate()+6); return d.toISOString().slice(0,10);})();
+  const wIn=pays.filter(t=>t.date>=wk&&t.date<=wEnd).reduce((a,t)=>a+ +t.amount,0);
+  const mIn=pays.filter(t=>(t.date||'').startsWith(thisMonth())).reduce((a,t)=>a+ +t.amount,0);
+  document.getElementById('repStats').innerHTML=`<div class="stat net"><small>إجمالي المبالغ المقبوضة</small><b>${fmt(totIn)}</b></div>`;
+  // by week
+  const weeks=[...new Set(all.filter(t=>t.type==='charge').map(t=>t.week||t.date))].sort().reverse();
+  document.getElementById('repWeeks').innerHTML= weeks.length? `<div class="tblwrap"><table class="subs"><thead><tr><th>الأسبوع</th><th>قيمة الاشتراك</th><th>المقبوض</th><th>المتبقي</th></tr></thead><tbody>${weeks.map(w=>{ const ch=all.filter(t=>t.type==='charge'&&(t.week||t.date)===w); const tot=ch.reduce((a,t)=>a+ +t.amount,0); const rem=ch.reduce((a,t)=>{ const al=weekAlloc(t.subscriberId).find(i=>i.key===w); return a+(al?al.remaining:0); },0); return `<tr><td>${weekLabel(w)}</td><td class="n">${fmt(tot)}</td><td class="n credit">${fmt(tot-rem)}</td><td class="n ${rem>0.001?'debt':''}">${rem>0.001?fmt(rem):'—'}</td></tr>`; }).join('')}</tbody></table></div>` : '<div class="empty">لا توجد أسابيع مسجَّلة.</div>';
+}
+
+async function resetWeeks(){
+  if(!await ask('سيتم مسح كل الأسابيع والمقبوضات والحركات، مع إبقاء المشتركين والإعدادات. متأكد؟')||!await ask('تأكيد أخير: إعادة تعيين الأسابيع والمقبوضات؟')) return;
+  toast('جارٍ المسح…'); const f=await delMany('tx',Object.keys(state.tx));
+  for(const [id,x] of Object.entries(state.subs)) if(+x.opening) await putSub(id,{...x,opening:0});
+  if(f) await ask(`تعذر مسح ${f} حركة. أعد المحاولة بعد قليل.`); else toast('تمت إعادة التعيين بالكامل');
+}
+async function resetAll(){
+  if(!await ask('سيتم مسح كل الأسابيع والمقبوضات والحركات وإعادة الإعدادات (السعر، الأسبوع الأول، الأمبيرات الإضافية…) إلى الوضع الابتدائي، مع إبقاء المشتركين. متأكد؟')||!await ask('تأكيد أخير: إعادة تعيين كامل مع إبقاء المشتركين؟')) return;
+  toast('جارٍ المسح…'); const f=await delMany('tx',Object.keys(state.tx));
+  for(const [id,x] of Object.entries(state.subs)) if(+x.opening||x.active===false) await putSub(id,{...x,opening:0,active:true});
+  state.settings={price:750,extra:0,firstWeek:'',cur:'',name:'',ownerPass:state.settings.ownerPass}; await putSettings();
+  if(f) await ask(`تعذر مسح ${f} حركة. أعد المحاولة بعد قليل.`); else toast('تمت إعادة التعيين الكاملة');
+}
+
+/* ---------- الإعدادات ---------- */
+async function saveSettings(){ state.settings={...state.settings,price:+document.getElementById('setPrice').value||0,extra:0,firstWeek:document.getElementById('setFirst').value||'',cc:document.getElementById('setCC').value.trim(),remindDays:Math.max(0,+document.getElementById('setRemind').value||0),remindTxt:document.getElementById('setRemindTxt').value.trim(),cur:document.getElementById('setCur').value.trim(),name:document.getElementById('setName').value.trim()}; await putSettings(); toast('تم حفظ الإعدادات'); }
+function exportData(){ const j=JSON.stringify(state); document.getElementById('ioBox').value=j; try{ navigator.clipboard.writeText(j); toast('نُسخت البيانات'); }catch(e){ toast('انسخ النص من المربع'); } }
+async function importData(){
+  try{ const r=JSON.parse(document.getElementById('ioBox').value); if(!r.subs||!r.tx) throw 0; if(!await ask('سيتم دمج البيانات المستوردة مع الحالية. متابعة؟')) return;
+    for(const [id,s] of Object.entries(r.subs)) await putSub(id,s); for(const [id,t] of Object.entries(r.tx)) await putTx(id,t); if(r.settings){ state.settings={...state.settings,...r.settings}; await putSettings(); } toast('تم الاستيراد'); }
+  catch(e){ toast('نسخة غير صالحة'); }
+}
+async function wipe(){ if(!await ask('سيتم مسح كل المشتركين والحركات نهائيًا. متأكد؟')||!await ask('تأكيد أخير: مسح الكل؟')) return;
+  const f=(await delMany('tx',Object.keys(state.tx)))+(await delMany('subs',Object.keys(state.subs))); if(f) await ask(`تعذر مسح ${f} عنصرًا. أعد المحاولة.`); else toast('تم المسح'); }
+
+document.getElementById('txMonth').value=thisMonth();
+initStore();
+</script>
+</body>
+</html>
